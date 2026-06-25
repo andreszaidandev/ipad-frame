@@ -64,7 +64,6 @@ export default function Poster() {
       setBg(`rgb(${r}, ${g}, ${b})`);
 
       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-
       setTextColor(lum > 140 ? "#000" : "#fff");
     };
   }
@@ -83,17 +82,15 @@ export default function Poster() {
     <div
       style={{
         position: "fixed",
-        inset: 0, // 🔥 FULL SCREEN (fixes white border)
+        inset: 0,
         width: "100vw",
         height: "100vh",
-        margin: 0,
-        padding: 0,
         overflow: "hidden",
         background: "#000",
         fontFamily: "Impact, Space Grotesk, sans-serif",
       }}
     >
-      {/* 🌫 FULLSCREEN BACKGROUND LAYER */}
+      {/* 🌫 background */}
       <div
         style={{
           position: "absolute",
@@ -104,11 +101,10 @@ export default function Poster() {
             #000
           `,
           filter: "blur(90px)",
-          transform: "scale(1.4)",
+          transform: "scale(1.3)",
         }}
       />
 
-      {/* hidden image for color extraction */}
       <img
         src={album}
         crossOrigin="anonymous"
@@ -116,49 +112,70 @@ export default function Poster() {
         onLoad={() => extractColor(album)}
       />
 
-      {/* MAIN CONTENT */}
+      {/* MAIN FLEX LAYOUT */}
       <div
         style={{
           position: "relative",
           zIndex: 2,
           height: "100%",
           width: "100%",
+
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "100px",
+
+          padding: "5vw",
+          gap: "4vw",
         }}
       >
-        {/* 🧱 BIGGER ALBUM */}
-        <img
-          src={album}
-          style={{
-            width: "520px", // 🔥 BIGGER
-            height: "520px",
-            objectFit: "cover",
-            borderRadius: "0px",
-            boxShadow: "30px 60px 0px rgba(0,0,0,0.8)",
-            border: `5px solid ${textColor}`,
-            transform: "rotate(-2deg)",
-          }}
-        />
-
-        {/* 🧱 TEXT BLOCK */}
+        {/* 🧱 ALBUM (50% SCREEN) */}
         <div
           style={{
-            maxWidth: "60%",
-            textAlign: "right",
+            flex: "0 0 48%",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <img
+            src={album}
+            style={{
+              width: "100%",
+              maxWidth: "600px",
+              aspectRatio: "1 / 1",
+              objectFit: "cover",
+              borderRadius: "0px",
+              boxShadow: "30px 60px 0px rgba(0,0,0,0.8)",
+              border: `5px solid ${textColor}`,
+              transform: "rotate(-2deg)",
+            }}
+          />
+        </div>
+
+        {/* 🧱 TEXT (WRAPPING + RESPONSIVE) */}
+        <div
+          style={{
+            flex: "1",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: "2vh",
+            minWidth: 0, // 🔥 IMPORTANT for wrapping
           }}
         >
           <h1
             style={{
-              fontSize: "120px",
+              fontSize: "clamp(40px, 6vw, 120px)",
               fontWeight: 900,
               margin: 0,
-              lineHeight: 0.85,
-              letterSpacing: "-0.06em",
+              lineHeight: 0.9,
+              letterSpacing: "-0.05em",
               textTransform: "uppercase",
               color: textColor,
+
+              // 🔥 allow wrapping
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
+              whiteSpace: "normal",
             }}
           >
             {track.item.name}
@@ -166,12 +183,15 @@ export default function Poster() {
 
           <h2
             style={{
-              fontSize: "40px",
-              marginTop: "30px",
-              letterSpacing: "0.4em",
+              fontSize: "clamp(18px, 2.5vw, 40px)",
+              letterSpacing: "0.35em",
               textTransform: "uppercase",
               color: textColor,
               opacity: 0.8,
+
+              wordBreak: "break-word",
+              overflowWrap: "break-word",
+              whiteSpace: "normal",
             }}
           >
             {track.item.artists[0].name}
