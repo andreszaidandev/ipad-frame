@@ -6,7 +6,7 @@ import { averageColor } from "../color";
 const POLL_MS = 8000;
 
 // Replace with your own Buy Me a Coffee handle.
-const COFFEE_URL = "https://buymeacoffee.com/your-handle";
+const COFFEE_URL = "https://buymeacoffee.com/andreszaidan";
 
 // Off-white palette (fixed, intentional).
 const TITLE = "#F5F5F0"; // bone / off-white
