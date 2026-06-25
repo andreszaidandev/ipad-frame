@@ -19,9 +19,15 @@ export default function Poster() {
     let active = true;
 
     async function poll() {
-      const next = await spotify.player.getCurrentlyPlayingTrack();
-      if (!active) return;
-      setPlayback((prev) => (prev?.item?.id === next?.item?.id ? prev : next));
+      try {
+        const next = await spotify.player.getCurrentlyPlayingTrack();
+        if (!active) return;
+        setPlayback((prev) => (prev?.item?.id === next?.item?.id ? prev : next));
+      } catch (err) {
+        // Token refresh/auth failures here trigger the SDK's own re-auth
+        // redirect; keep the last known track for transient network errors.
+        console.error("Failed to fetch current track", err);
+      }
     }
 
     poll();
