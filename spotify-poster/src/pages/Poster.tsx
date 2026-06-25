@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import * as Vibrant from "node-vibrant";
 import { spotify } from "../spotify";
 
 export default function Poster() {
   const [track, setTrack] = useState<any>(null);
-  const [palette, setPalette] = useState<any>(null);
-  const [textColor, setTextColor] = useState("#fff");
+  const [bg, setBg] = useState("rgb(10,10,10)");
+  const [titleColor, setTitleColor] = useState("#fff");
+  const [artistColor, setArtistColor] = useState("#aaa");
 
   useEffect(() => {
     loadTrack();
@@ -20,7 +20,7 @@ export default function Poster() {
         }
         return prev;
       });
-    }, 10000);
+    }, 8000);
 
     return () => clearInterval(interval);
   }, []);
@@ -36,30 +36,53 @@ export default function Poster() {
     }
   }
 
-async function handleImageLoad() {
-  try {
-    const album = track.item.album.images[0].url;
+  // 🎨 extract dominant color WITHOUT libraries (stable + Vercel-safe)
+  async function extractColor(imageUrl: string) {
+    return new Promise<void>((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = imageUrl;
 
-    const v = new (Vibrant as any)(album);
-    const p = await v.getPalette();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
 
-    setPalette(p);
+        if (!ctx) return resolve();
 
-    const rgb =
-      p.Vibrant?.rgb ||
-      p.Muted?.rgb ||
-      [20, 20, 20];
+        canvas.width = 50;
+        canvas.height = 50;
 
-    const [r, g, b] = rgb;
+        ctx.drawImage(img, 0, 0, 50, 50);
 
-    const luminance =
-      0.299 * r + 0.587 * g + 0.114 * b;
+        const data = ctx.getImageData(0, 0, 50, 50).data;
 
-    setTextColor(luminance > 140 ? "#000" : "#fff");
-  } catch (err) {
-    console.error("Vibrant failed", err);
+        let r = 0, g = 0, b = 0;
+        let count = 0;
+
+        for (let i = 0; i < data.length; i += 4) {
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+          count++;
+        }
+
+        r = Math.floor(r / count);
+        g = Math.floor(g / count);
+        b = Math.floor(b / count);
+
+        setBg(`rgb(${r}, ${g}, ${b})`);
+
+        // luminance
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+        // 🎯 two contrasting text colors
+        setTitleColor(lum > 140 ? "#000" : "#fff");
+        setArtistColor(lum > 140 ? "#333" : "#bbb");
+
+        resolve();
+      };
+    });
   }
-}
 
   if (!track?.item) {
     return (
@@ -77,38 +100,59 @@ async function handleImageLoad() {
         height: "100vh",
         display: "flex",
         alignItems: "center",
-        gap: "60px",
-        padding: "60px",
-        color: textColor,
+        gap: "80px",
+        padding: "80px",
+        color: titleColor,
         fontFamily: "Space Grotesk, sans-serif",
-        transition: "background 0.8s ease, color 0.4s ease",
-        background: `
-          radial-gradient(circle at 20% 20%, ${palette?.Vibrant?.hex || "#222"}, transparent 60%),
-          radial-gradient(circle at 80% 30%, ${palette?.Muted?.hex || "#111"}, transparent 55%),
-          radial-gradient(circle at 40% 80%, ${palette?.DarkVibrant?.hex || "#000"}, transparent 60%),
-          #0a0a0a
-        `,
+        position: "relative",
+        overflow: "hidden",
+        background: "#000",
       }}
     >
+      {/* 🌫 Apple-style blurred gradient background */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `
+            radial-gradient(circle at 20% 20%, ${bg}, transparent 40%),
+            radial-gradient(circle at 80% 30%, rgba(255,255,255,0.08), transparent 50%),
+            radial-gradient(circle at 50% 80%, rgba(0,0,0,0.7), transparent 60%)
+          `,
+          filter: "blur(80px)",
+          transform: "scale(1.2)",
+        }}
+      />
+
+      {/* load color when image changes */}
+      <img
+        src={album}
+        crossOrigin="anonymous"
+        style={{ display: "none" }}
+        onLoad={() => extractColor(album)}
+      />
+
+      {/* 🧱 Brutalist layout */}
       <img
         src={album}
         width={420}
-        crossOrigin="anonymous"
         style={{
-          boxShadow: "0 40px 120px rgba(0,0,0,0.6)",
-          borderRadius: "4px",
+          zIndex: 2,
+          boxShadow: "0 60px 140px rgba(0,0,0,0.6)",
+          borderRadius: "0px",
+          transform: "none",
         }}
-        onLoad={handleImageLoad}
       />
 
-      <div>
+      <div style={{ zIndex: 2 }}>
         <h1
           style={{
-            fontSize: "64px",
-            fontWeight: 700,
+            fontSize: "72px",
+            fontWeight: 800,
             margin: 0,
-            letterSpacing: "-0.03em",
+            letterSpacing: "-0.04em",
             textTransform: "uppercase",
+            color: titleColor,
           }}
         >
           {track.item.name}
@@ -117,11 +161,11 @@ async function handleImageLoad() {
         <h2
           style={{
             fontSize: "28px",
-            fontFamily: "IBM Plex Mono, monospace",
-            letterSpacing: "0.2em",
             marginTop: "20px",
-            opacity: 0.8,
+            fontFamily: "IBM Plex Mono, monospace",
+            letterSpacing: "0.25em",
             textTransform: "uppercase",
+            color: artistColor,
           }}
         >
           {track.item.artists[0].name}
