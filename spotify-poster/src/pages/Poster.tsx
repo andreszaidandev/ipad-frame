@@ -38,13 +38,13 @@ export default function Poster() {
 
   async function handleImageLoad(imageUrl: string) {
     try {
-      const p = await new Vibrant(imageUrl).getPalette();
+      const palette = await new Vibrant(album).getPalette();
 
-      setPalette(p);
+      setPalette(palette);
 
       const rgb =
-        p.Vibrant?.rgb ||
-        p.Muted?.rgb ||
+        palette.Vibrant?.rgb ||
+        palette.Muted?.rgb ||
         [20, 20, 20];
 
       const [r, g, b] = rgb;
