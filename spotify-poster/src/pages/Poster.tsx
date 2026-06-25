@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Vibrant from "node-vibrant";
 import { spotify } from "../spotify";
 
@@ -6,8 +6,6 @@ export default function Poster() {
   const [track, setTrack] = useState<any>(null);
   const [palette, setPalette] = useState<any>(null);
   const [textColor, setTextColor] = useState("#fff");
-
-  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     loadTrack();
@@ -38,11 +36,10 @@ export default function Poster() {
     }
   }
 
-  async function handleImageLoad() {
-    if (!imgRef.current) return;
-
+  async function handleImageLoad(imageUrl: string) {
     try {
-      const p = await Vibrant.from(imgRef.current).getPalette();
+      const p = await new Vibrant(imageUrl).getPalette();
+
       setPalette(p);
 
       const rgb =
@@ -91,7 +88,6 @@ export default function Poster() {
       }}
     >
       <img
-        ref={imgRef}
         src={album}
         width={420}
         crossOrigin="anonymous"
@@ -99,7 +95,7 @@ export default function Poster() {
           boxShadow: "0 40px 120px rgba(0,0,0,0.6)",
           borderRadius: "4px",
         }}
-        onLoad={handleImageLoad}
+        onLoad={() => handleImageLoad(album)}
       />
 
       <div>
