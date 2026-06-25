@@ -181,8 +181,9 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: "-0.04em",
     textTransform: "uppercase",
     color: TITLE,
+    // Wrap at spaces (whole words per line); only hard-break a word that is
+    // too long to fit on its own line — never hyphenate mid-word.
     overflowWrap: "break-word",
-    hyphens: "auto",
   },
   artist: {
     fontSize: "clamp(18px, 2.5vw, 36px)",
