@@ -36,15 +36,17 @@ export default function Poster() {
     }
   }
 
-  async function handleImageLoad(imageUrl: string) {
+  async function handleImageLoad() {
     try {
-      const palette = await new Vibrant(album).getPalette();
+      const album = track.item.album.images[0].url;
 
-      setPalette(palette);
+      const p = await new Vibrant(album).getPalette();
+
+      setPalette(p);
 
       const rgb =
-        palette.Vibrant?.rgb ||
-        palette.Muted?.rgb ||
+        p.Vibrant?.rgb ||
+        p.Muted?.rgb ||
         [20, 20, 20];
 
       const [r, g, b] = rgb;
@@ -95,7 +97,7 @@ export default function Poster() {
           boxShadow: "0 40px 120px rgba(0,0,0,0.6)",
           borderRadius: "4px",
         }}
-        onLoad={() => handleImageLoad(album)}
+        onLoad={handleImageLoad}
       />
 
       <div>
