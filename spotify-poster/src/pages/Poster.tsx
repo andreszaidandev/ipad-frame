@@ -4,7 +4,8 @@ import { spotify } from "../spotify";
 export default function Poster() {
   const [track, setTrack] = useState<any>(null);
   const [bg, setBg] = useState("rgb(10,10,10)");
-  const [textColor, setTextColor] = useState("#fff");
+  const [titleColor, setTitleColor] = useState("#fff");
+  const [artistColor, setArtistColor] = useState("#aaa");
 
   useEffect(() => {
     loadTrack();
@@ -31,6 +32,21 @@ export default function Poster() {
     setTrack(playback);
   }
 
+  function pickTextColors(r: number, g: number, b: number) {
+    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+
+    // base split: one strong, one muted contrast
+    if (luminance > 150) {
+      // light background → dark text hierarchy
+      setTitleColor("#000");
+      setArtistColor("rgba(0,0,0,0.6)");
+    } else {
+      // dark background → light hierarchy
+      setTitleColor("#fff");
+      setArtistColor("rgba(255,255,255,0.7)");
+    }
+  }
+
   async function extractColor(imageUrl: string) {
     const img = new Image();
     img.crossOrigin = "anonymous";
@@ -41,12 +57,12 @@ export default function Poster() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      canvas.width = 50;
-      canvas.height = 50;
+      canvas.width = 60;
+      canvas.height = 60;
 
-      ctx.drawImage(img, 0, 0, 50, 50);
+      ctx.drawImage(img, 0, 0, 60, 60);
 
-      const data = ctx.getImageData(0, 0, 50, 50).data;
+      const data = ctx.getImageData(0, 0, 60, 60).data;
 
       let r = 0, g = 0, b = 0, count = 0;
 
@@ -57,14 +73,12 @@ export default function Poster() {
         count++;
       }
 
-      r = r / count;
-      g = g / count;
-      b = b / count;
+      r = Math.floor(r / count);
+      g = Math.floor(g / count);
+      b = Math.floor(b / count);
 
       setBg(`rgb(${r}, ${g}, ${b})`);
-
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-      setTextColor(lum > 140 ? "#000" : "#fff");
+      pickTextColors(r, g, b);
     };
   }
 
@@ -112,30 +126,22 @@ export default function Poster() {
         onLoad={() => extractColor(album)}
       />
 
-      {/* MAIN FLEX LAYOUT */}
+      {/* MAIN LAYOUT */}
       <div
         style={{
           position: "relative",
           zIndex: 2,
           height: "100%",
           width: "100%",
-
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-
           padding: "5vw",
           gap: "4vw",
         }}
       >
-        {/* 🧱 ALBUM (50% SCREEN) */}
-        <div
-          style={{
-            flex: "0 0 48%",
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
+        {/* ALBUM */}
+        <div style={{ flex: "0 0 48%" }}>
           <img
             src={album}
             style={{
@@ -145,23 +151,24 @@ export default function Poster() {
               objectFit: "cover",
               borderRadius: "0px",
               boxShadow: "30px 60px 0px rgba(0,0,0,0.8)",
-              border: `5px solid ${textColor}`,
+              border: `5px solid ${titleColor}`,
               transform: "rotate(-2deg)",
             }}
           />
         </div>
 
-        {/* 🧱 TEXT (WRAPPING + RESPONSIVE) */}
+        {/* TEXT */}
         <div
           style={{
-            flex: "1",
+            flex: 1,
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
             gap: "2vh",
-            minWidth: 0, // 🔥 IMPORTANT for wrapping
+            minWidth: 0,
           }}
         >
+          {/* TITLE (strong contrast) */}
           <h1
             style={{
               fontSize: "clamp(40px, 6vw, 120px)",
@@ -170,28 +177,22 @@ export default function Poster() {
               lineHeight: 0.9,
               letterSpacing: "-0.05em",
               textTransform: "uppercase",
-              color: textColor,
-
-              // 🔥 allow wrapping
+              color: titleColor,
               wordBreak: "break-word",
-              overflowWrap: "break-word",
-              whiteSpace: "normal",
             }}
           >
             {track.item.name}
           </h1>
 
+          {/* ARTIST (secondary contrast) */}
           <h2
             style={{
               fontSize: "clamp(18px, 2.5vw, 40px)",
               letterSpacing: "0.35em",
               textTransform: "uppercase",
-              color: textColor,
-              opacity: 0.8,
-
+              color: artistColor,
               wordBreak: "break-word",
-              overflowWrap: "break-word",
-              whiteSpace: "normal",
+              marginTop: "10px",
             }}
           >
             {track.item.artists[0].name}
