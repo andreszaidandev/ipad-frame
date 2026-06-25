@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Vibrant from "node-vibrant";
+import * as Vibrant from "node-vibrant";
 import { spotify } from "../spotify";
 
 export default function Poster() {
@@ -36,29 +36,30 @@ export default function Poster() {
     }
   }
 
-  async function handleImageLoad() {
-    try {
-      const album = track.item.album.images[0].url;
+async function handleImageLoad() {
+  try {
+    const album = track.item.album.images[0].url;
 
-      const p = await new Vibrant(album).getPalette();
+    const v = new (Vibrant as any)(album);
+    const p = await v.getPalette();
 
-      setPalette(p);
+    setPalette(p);
 
-      const rgb =
-        p.Vibrant?.rgb ||
-        p.Muted?.rgb ||
-        [20, 20, 20];
+    const rgb =
+      p.Vibrant?.rgb ||
+      p.Muted?.rgb ||
+      [20, 20, 20];
 
-      const [r, g, b] = rgb;
+    const [r, g, b] = rgb;
 
-      const luminance =
-        0.299 * r + 0.587 * g + 0.114 * b;
+    const luminance =
+      0.299 * r + 0.587 * g + 0.114 * b;
 
-      setTextColor(luminance > 140 ? "#000" : "#fff");
-    } catch (err) {
-      console.error("Vibrant failed", err);
-    }
+    setTextColor(luminance > 140 ? "#000" : "#fff");
+  } catch (err) {
+    console.error("Vibrant failed", err);
   }
+}
 
   if (!track?.item) {
     return (
