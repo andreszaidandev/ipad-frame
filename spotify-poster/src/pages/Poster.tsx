@@ -5,6 +5,9 @@ import { averageColor } from "../color";
 
 const POLL_MS = 8000;
 
+// Replace with your own Buy Me a Coffee handle.
+const COFFEE_URL = "https://buymeacoffee.com/andreszaidan";
+
 // Off-white palette (fixed, intentional).
 const TITLE = "#F5F5F0"; // bone / off-white
 const ARTIST = "rgba(245,245,240,0.65)";
@@ -68,23 +71,38 @@ export default function Poster() {
 
       {/* Grid system */}
       <div style={styles.grid}>
-        <div style={styles.systemText}>spotify / now playing / system 2026</div>
+        <div style={styles.topLabel}>
+          spotify / now playing /{" "}
+          <a href={COFFEE_URL} target="_blank" rel="noreferrer" style={styles.coffee}>
+            buy me a coffee
+          </a>
+        </div>
 
         <div style={styles.main}>
           <img src={cover} alt="" style={styles.cover} />
 
-          <div style={{ maxWidth: "50vw" }}>
+          <div style={styles.info}>
             <h1 style={styles.title}>{track.name}</h1>
             <h2 style={styles.artist}>{track.artists[0].name}</h2>
             <div style={styles.rule} />
           </div>
         </div>
 
-        <div style={styles.systemText}>audio stream active</div>
+        <div style={styles.bottomLabel}>audio stream active</div>
       </div>
     </div>
   );
 }
+
+const label: React.CSSProperties = {
+  position: "absolute",
+  left: "6vw",
+  zIndex: 3,
+  color: META,
+  fontSize: "12px",
+  letterSpacing: "0.4em",
+  textTransform: "uppercase",
+};
 
 const styles: Record<string, React.CSSProperties> = {
   empty: {
@@ -119,43 +137,52 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 2,
     height: "100%",
     width: "100%",
+    boxSizing: "border-box", // keep padding inside the viewport (no horizontal overflow)
     display: "flex",
     flexDirection: "column",
-    justifyContent: "space-between",
+    justifyContent: "center",
     padding: "6vw",
   },
-  systemText: {
-    color: META,
-    fontSize: "12px",
-    letterSpacing: "0.4em",
-    textTransform: "uppercase",
+  topLabel: { ...label, top: "6vw" },
+  bottomLabel: { ...label, bottom: "6vw" },
+  coffee: {
+    color: ARTIST,
+    textDecoration: "underline",
+    textUnderlineOffset: "3px",
   },
   main: {
     display: "flex",
     alignItems: "center",
-    gap: "6vw",
+    gap: "5vw",
+    // Nudge the composition up so it reads as centered above the bottom label.
+    marginBottom: "5vh",
   },
   cover: {
-    width: "45vw",
-    maxWidth: "600px",
+    width: "40vw",
+    maxWidth: "520px",
     aspectRatio: "1 / 1",
     objectFit: "cover",
+    flexShrink: 0,
     boxShadow: "40px 60px 0px rgba(0,0,0,0.7)",
     border: "1px solid rgba(245,245,240,0.2)",
     transform: "rotate(-1deg)",
   },
+  info: {
+    flex: 1,
+    minWidth: 0, // lets the title wrap instead of overflowing the flex row
+    position: "relative",
+    zIndex: 1, // keep text above the album's transformed shadow
+  },
   title: {
-    fontSize: "clamp(48px, 6vw, 110px)",
+    fontSize: "clamp(36px, 5vw, 92px)",
     fontWeight: 800,
     margin: 0,
     lineHeight: 0.9,
     letterSpacing: "-0.04em",
     textTransform: "uppercase",
     color: TITLE,
-    wordBreak: "break-word",
     overflowWrap: "break-word",
     hyphens: "auto",
-    maxWidth: "100%",
   },
   artist: {
     fontSize: "clamp(18px, 2.5vw, 36px)",
@@ -163,6 +190,7 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: "0.3em",
     textTransform: "uppercase",
     color: ARTIST,
+    overflowWrap: "break-word",
   },
   rule: {
     marginTop: "40px",
