@@ -1,17 +1,29 @@
 import { useEffect, useState, useRef } from "react";
-import ColorThief from "color-thief-browser";
+import Vibrant from "node-vibrant";
 import { spotify } from "../spotify";
 
 export default function Poster() {
   const [track, setTrack] = useState<any>(null);
-  const [bg, setBg] = useState("rgb(20,20,20)");
+  const [palette, setPalette] = useState<any>(null);
   const [textColor, setTextColor] = useState("#fff");
 
   const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     loadTrack();
-    const interval = setInterval(loadTrack, 10000);
+
+    const interval = setInterval(async () => {
+      const newTrack =
+        await spotify.player.getCurrentlyPlayingTrack();
+
+      setTrack((prev: any) => {
+        if (prev?.item?.id !== newTrack?.item?.id) {
+          return newTrack;
+        }
+        return prev;
+      });
+    }, 10000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -26,20 +38,26 @@ export default function Poster() {
     }
   }
 
-  function handleImageLoad() {
+  async function handleImageLoad() {
     if (!imgRef.current) return;
 
     try {
-      const colorThief = new ColorThief();
-      const color = colorThief.getColor(imgRef.current);
+      const p = await Vibrant.from(imgRef.current).getPalette();
+      setPalette(p);
 
-      const rgb = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-      setBg(rgb);
+      const rgb =
+        p.Vibrant?.rgb ||
+        p.Muted?.rgb ||
+        [20, 20, 20];
 
-      const luminance = 0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2];
+      const [r, g, b] = rgb;
+
+      const luminance =
+        0.299 * r + 0.587 * g + 0.114 * b;
+
       setTextColor(luminance > 140 ? "#000" : "#fff");
-    } catch (e) {
-      console.error("Color extraction failed", e);
+    } catch (err) {
+      console.error("Vibrant failed", err);
     }
   }
 
@@ -63,10 +81,11 @@ export default function Poster() {
         padding: "60px",
         color: textColor,
         fontFamily: "Space Grotesk, sans-serif",
+        transition: "background 0.8s ease, color 0.4s ease",
         background: `
-          radial-gradient(circle at 20% 20%, ${bg}, transparent 60%),
-          radial-gradient(circle at 80% 30%, rgba(255,255,255,0.08), transparent 50%),
-          radial-gradient(circle at 40% 80%, rgba(0,0,0,0.6), transparent 60%),
+          radial-gradient(circle at 20% 20%, ${palette?.Vibrant?.hex || "#222"}, transparent 60%),
+          radial-gradient(circle at 80% 30%, ${palette?.Muted?.hex || "#111"}, transparent 55%),
+          radial-gradient(circle at 40% 80%, ${palette?.DarkVibrant?.hex || "#000"}, transparent 60%),
           #0a0a0a
         `,
       }}
@@ -75,6 +94,7 @@ export default function Poster() {
         ref={imgRef}
         src={album}
         width={420}
+        crossOrigin="anonymous"
         style={{
           boxShadow: "0 40px 120px rgba(0,0,0,0.6)",
           borderRadius: "4px",
