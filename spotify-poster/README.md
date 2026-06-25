@@ -1,32 +1,39 @@
-# React + TypeScript + Vite
+# Spotify Poster
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A full-screen "now playing" poster for an iPad (or any always-on display). It
+logs into Spotify, polls the currently playing track, and renders it as an
+Off-White–style typographic poster with an ambient background tinted from the
+album cover.
 
-Currently, two official plugins are available:
+## How it works
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Auth** — PKCE user authorization via `@spotify/web-api-ts-sdk`
+  ([`src/spotify.ts`](src/spotify.ts)). No backend or secrets required.
+- **Routes** ([`src/App.tsx`](src/App.tsx)):
+  - `/` — [`Login`](src/pages/Login.tsx) starts the Spotify auth flow.
+  - `/callback` — [`Callback`](src/pages/Callback.tsx) finishes auth, then
+    redirects to the poster.
+  - `/poster` — [`Poster`](src/pages/Poster.tsx) polls the track every 8s and
+    renders it. [`src/color.ts`](src/color.ts) derives the ambient glow from
+    the cover art.
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+echo "VITE_SPOTIFY_CLIENT_ID=your_client_id" > .env.local
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Add `<origin>/callback` (e.g. `http://localhost:5173/callback`) as a redirect
+URI in your Spotify app dashboard.
+
+## Scripts
+
+- `npm run dev` — start the dev server
+- `npm run build` — type-check and build for production
+- `npm run preview` — preview the production build
+- `npm run lint` — run Oxlint
+
+Deploys as a static SPA; [`vercel.json`](vercel.json) rewrites all routes to
+`index.html` for client-side routing.
