@@ -3,7 +3,7 @@ import { spotify } from "../spotify";
 
 export default function Poster() {
   const [track, setTrack] = useState<any>(null);
-  const [bg, setBg] = useState("rgb(15,15,15)");
+  const [bg, setBg] = useState("rgb(10,10,10)");
   const [textColor, setTextColor] = useState("#fff");
 
   useEffect(() => {
@@ -41,12 +41,12 @@ export default function Poster() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      canvas.width = 40;
-      canvas.height = 40;
+      canvas.width = 50;
+      canvas.height = 50;
 
-      ctx.drawImage(img, 0, 0, 40, 40);
+      ctx.drawImage(img, 0, 0, 50, 50);
 
-      const data = ctx.getImageData(0, 0, 40, 40).data;
+      const data = ctx.getImageData(0, 0, 50, 50).data;
 
       let r = 0, g = 0, b = 0, count = 0;
 
@@ -64,13 +64,14 @@ export default function Poster() {
       setBg(`rgb(${r}, ${g}, ${b})`);
 
       const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
       setTextColor(lum > 140 ? "#000" : "#fff");
     };
   }
 
   if (!track?.item) {
     return (
-      <div className="h-screen flex items-center justify-center bg-black text-white">
+      <div className="h-screen w-screen flex items-center justify-center bg-black text-white">
         NO SIGNAL
       </div>
     );
@@ -81,25 +82,28 @@ export default function Poster() {
   return (
     <div
       style={{
-        height: "100vh",
+        position: "fixed",
+        inset: 0, // 🔥 FULL SCREEN (fixes white border)
         width: "100vw",
-        position: "relative",
+        height: "100vh",
+        margin: 0,
+        padding: 0,
         overflow: "hidden",
-        background: "#0a0a0a",
+        background: "#000",
         fontFamily: "Impact, Space Grotesk, sans-serif",
       }}
     >
-      {/* rough street background */}
+      {/* 🌫 FULLSCREEN BACKGROUND LAYER */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           background: `
-            radial-gradient(circle at 20% 20%, ${bg}, transparent 50%),
+            radial-gradient(circle at 20% 20%, ${bg}, transparent 45%),
             radial-gradient(circle at 80% 70%, rgba(255,255,255,0.08), transparent 60%),
-            #0a0a0a
+            #000
           `,
-          filter: "blur(70px)",
+          filter: "blur(90px)",
           transform: "scale(1.4)",
         }}
       />
@@ -112,7 +116,7 @@ export default function Poster() {
         onLoad={() => extractColor(album)}
       />
 
-      {/* STREET LAYOUT CONTAINER */}
+      {/* MAIN CONTENT */}
       <div
         style={{
           position: "relative",
@@ -120,88 +124,58 @@ export default function Poster() {
           height: "100%",
           width: "100%",
           display: "flex",
-          flexDirection: "column",
+          alignItems: "center",
           justifyContent: "space-between",
-          padding: "80px",
+          padding: "100px",
         }}
       >
-        {/* TOP LABEL (small chaos text) */}
-        <div
+        {/* 🧱 BIGGER ALBUM */}
+        <img
+          src={album}
           style={{
-            fontSize: "18px",
-            letterSpacing: "0.4em",
-            textTransform: "uppercase",
-            opacity: 0.7,
+            width: "520px", // 🔥 BIGGER
+            height: "520px",
+            objectFit: "cover",
+            borderRadius: "0px",
+            boxShadow: "30px 60px 0px rgba(0,0,0,0.8)",
+            border: `5px solid ${textColor}`,
             transform: "rotate(-2deg)",
           }}
-        >
-          now playing // live session
-        </div>
+        />
 
-        {/* CENTER BLOCK */}
+        {/* 🧱 TEXT BLOCK */}
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "60px",
+            maxWidth: "60%",
+            textAlign: "right",
           }}
         >
-          {/* ALBUM POSTER */}
-          <img
-            src={album}
-            width={380}
+          <h1
             style={{
-              borderRadius: "0px",
-              boxShadow: "20px 40px 0px rgba(0,0,0,0.8)",
-              transform: "rotate(-3deg)",
-              border: `4px solid ${textColor}`,
+              fontSize: "120px",
+              fontWeight: 900,
+              margin: 0,
+              lineHeight: 0.85,
+              letterSpacing: "-0.06em",
+              textTransform: "uppercase",
+              color: textColor,
             }}
-          />
+          >
+            {track.item.name}
+          </h1>
 
-          {/* TYPOGRAPHY STACK */}
-          <div>
-            <h1
-              style={{
-                fontSize: "110px",
-                fontWeight: 900,
-                margin: 0,
-                lineHeight: 0.85,
-                letterSpacing: "-0.06em",
-                textTransform: "uppercase",
-                color: textColor,
-                transform: "rotate(1deg)",
-              }}
-            >
-              {track.item.name}
-            </h1>
-
-            <h2
-              style={{
-                fontSize: "32px",
-                marginTop: "20px",
-                letterSpacing: "0.35em",
-                textTransform: "uppercase",
-                color: textColor,
-                opacity: 0.8,
-                transform: "rotate(-1deg)",
-              }}
-            >
-              {track.item.artists[0].name}
-            </h2>
-          </div>
-        </div>
-
-        {/* BOTTOM TAG */}
-        <div
-          style={{
-            fontSize: "14px",
-            letterSpacing: "0.5em",
-            textTransform: "uppercase",
-            opacity: 0.6,
-            transform: "rotate(2deg)",
-          }}
-        >
-          spotify frame system / 2026
+          <h2
+            style={{
+              fontSize: "40px",
+              marginTop: "30px",
+              letterSpacing: "0.4em",
+              textTransform: "uppercase",
+              color: textColor,
+              opacity: 0.8,
+            }}
+          >
+            {track.item.artists[0].name}
+          </h2>
         </div>
       </div>
     </div>
