@@ -2,203 +2,227 @@ import { useEffect, useState } from "react";
 import { spotify } from "../spotify";
 
 export default function Poster() {
-  const [track, setTrack] = useState<any>(null);
-  const [bg, setBg] = useState("rgb(10,10,10)");
-  const [titleColor, setTitleColor] = useState("#fff");
-  const [artistColor, setArtistColor] = useState("#aaa");
+    const [track, setTrack] = useState<any>(null);
+    const [bg, setBg] = useState("rgb(15,15,15)");
 
-  useEffect(() => {
-    loadTrack();
+    // Off-White palette (fixed, intentional)
+    const TITLE = "#F5F5F0";   // bone / off-white
+    const ARTIST = "rgba(245,245,240,0.65)";
+    const META = "rgba(245,245,240,0.35)";
 
-    const interval = setInterval(async () => {
-      const newTrack =
-        await spotify.player.getCurrentlyPlayingTrack();
+    useEffect(() => {
+        loadTrack();
 
-      setTrack((prev: any) => {
-        if (prev?.item?.id !== newTrack?.item?.id) {
-          return newTrack;
-        }
-        return prev;
-      });
-    }, 8000);
+        const interval = setInterval(async () => {
+            const newTrack =
+                await spotify.player.getCurrentlyPlayingTrack();
 
-    return () => clearInterval(interval);
-  }, []);
+            setTrack((prev: any) => {
+                if (prev?.item?.id !== newTrack?.item?.id) {
+                    return newTrack;
+                }
+                return prev;
+            });
+        }, 8000);
 
-  async function loadTrack() {
-    const playback =
-      await spotify.player.getCurrentlyPlayingTrack();
+        return () => clearInterval(interval);
+    }, []);
 
-    setTrack(playback);
-  }
+    async function loadTrack() {
+        const playback =
+            await spotify.player.getCurrentlyPlayingTrack();
 
-  function pickTextColors(r: number, g: number, b: number) {
-    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-
-    // base split: one strong, one muted contrast
-    if (luminance > 150) {
-      // light background → dark text hierarchy
-      setTitleColor("#000");
-      setArtistColor("rgba(0,0,0,0.6)");
-    } else {
-      // dark background → light hierarchy
-      setTitleColor("#fff");
-      setArtistColor("rgba(255,255,255,0.7)");
+        setTrack(playback);
     }
-  }
 
-  async function extractColor(imageUrl: string) {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = imageUrl;
+    async function extractColor(imageUrl: string) {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = imageUrl;
 
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+        img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
 
-      canvas.width = 60;
-      canvas.height = 60;
+            canvas.width = 60;
+            canvas.height = 60;
 
-      ctx.drawImage(img, 0, 0, 60, 60);
+            ctx.drawImage(img, 0, 0, 60, 60);
 
-      const data = ctx.getImageData(0, 0, 60, 60).data;
+            const data = ctx.getImageData(0, 0, 60, 60).data;
 
-      let r = 0, g = 0, b = 0, count = 0;
+            let r = 0, g = 0, b = 0, count = 0;
 
-      for (let i = 0; i < data.length; i += 4) {
-        r += data[i];
-        g += data[i + 1];
-        b += data[i + 2];
-        count++;
-      }
+            for (let i = 0; i < data.length; i += 4) {
+                r += data[i];
+                g += data[i + 1];
+                b += data[i + 2];
+                count++;
+            }
 
-      r = Math.floor(r / count);
-      g = Math.floor(g / count);
-      b = Math.floor(b / count);
+            r = Math.floor(r / count);
+            g = Math.floor(g / count);
+            b = Math.floor(b / count);
 
-      setBg(`rgb(${r}, ${g}, ${b})`);
-      pickTextColors(r, g, b);
-    };
-  }
+            setBg(`rgb(${r}, ${g}, ${b})`);
+        };
+    }
 
-  if (!track?.item) {
+    if (!track?.item) {
+        return (
+            <div className="h-screen w-screen flex items-center justify-center bg-black text-white">
+                NO SIGNAL
+            </div>
+        );
+    }
+
+    const album = track.item.album.images[0].url;
+
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-black text-white">
-        NO SIGNAL
-      </div>
-    );
-  }
-
-  const album = track.item.album.images[0].url;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        width: "100vw",
-        height: "100vh",
-        overflow: "hidden",
-        background: "#000",
-        fontFamily: "Impact, Space Grotesk, sans-serif",
-      }}
-    >
-      {/* 🌫 background */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `
-            radial-gradient(circle at 20% 20%, ${bg}, transparent 45%),
-            radial-gradient(circle at 80% 70%, rgba(255,255,255,0.08), transparent 60%),
-            #000
-          `,
-          filter: "blur(90px)",
-          transform: "scale(1.3)",
-        }}
-      />
-
-      <img
-        src={album}
-        crossOrigin="anonymous"
-        style={{ display: "none" }}
-        onLoad={() => extractColor(album)}
-      />
-
-      {/* MAIN LAYOUT */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          height: "100%",
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "5vw",
-          gap: "4vw",
-        }}
-      >
-        {/* ALBUM */}
-        <div style={{ flex: "0 0 48%" }}>
-          <img
-            src={album}
-            style={{
-              width: "100%",
-              maxWidth: "600px",
-              aspectRatio: "1 / 1",
-              objectFit: "cover",
-              borderRadius: "0px",
-              boxShadow: "30px 60px 0px rgba(0,0,0,0.8)",
-              border: `5px solid ${titleColor}`,
-              transform: "rotate(-2deg)",
-            }}
-          />
-        </div>
-
-        {/* TEXT */}
         <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: "2vh",
-            minWidth: 0,
-          }}
+            style={{
+                position: "fixed",
+                inset: 0,
+                width: "100vw",
+                height: "100vh",
+                overflow: "hidden",
+                background: "#0a0a0a",
+                fontFamily: "Helvetica, Arial, sans-serif",
+            }}
         >
-          {/* TITLE (strong contrast) */}
-          <h1
-            style={{
-              fontSize: "clamp(40px, 6vw, 120px)",
-              fontWeight: 900,
-              margin: 0,
-              lineHeight: 0.9,
-              letterSpacing: "-0.05em",
-              textTransform: "uppercase",
-              color: titleColor,
-              wordBreak: "break-word",
-            }}
-          >
-            {track.item.name}
-          </h1>
+            {/* OFF-WHITE STYLE BACKGROUND */}
+            <div
+                style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: `
+            radial-gradient(circle at 30% 30%, ${bg}, transparent 50%),
+            radial-gradient(circle at 70% 70%, rgba(255,255,255,0.05), transparent 60%),
+            #0a0a0a
+          `,
+                    filter: "blur(100px)",
+                    transform: "scale(1.3)",
+                }}
+            />
 
-          {/* ARTIST (secondary contrast) */}
-          <h2
-            style={{
-              fontSize: "clamp(18px, 2.5vw, 40px)",
-              letterSpacing: "0.35em",
-              textTransform: "uppercase",
-              color: artistColor,
-              wordBreak: "break-word",
-              marginTop: "10px",
-            }}
-          >
-            {track.item.artists[0].name}
-          </h2>
+            <img
+                src={album}
+                crossOrigin="anonymous"
+                style={{ display: "none" }}
+                onLoad={() => extractColor(album)}
+            />
+
+            {/* GRID SYSTEM */}
+            <div
+                style={{
+                    position: "relative",
+                    zIndex: 2,
+                    height: "100%",
+                    width: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    padding: "6vw",
+                }}
+            >
+                {/* TOP SYSTEM TEXT */}
+                <div
+                    style={{
+                        color: META,
+                        fontSize: "12px",
+                        letterSpacing: "0.4em",
+                        textTransform: "uppercase",
+                    }}
+                >
+                    spotify / now playing / system 2026
+                </div>
+
+                {/* MAIN BLOCK */}
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6vw",
+                    }}
+                >
+                    {/* ALBUM */}
+                    <img
+                        src={album}
+                        style={{
+                            width: "45vw",
+                            maxWidth: "600px",
+                            aspectRatio: "1 / 1",
+                            objectFit: "cover",
+                            borderRadius: "0px",
+                            boxShadow: "40px 60px 0px rgba(0,0,0,0.7)",
+                            border: "1px solid rgba(245,245,240,0.2)",
+                            transform: "rotate(-1deg)",
+                        }}
+                    />
+
+                    {/* TYPOGRAPHY */}
+                    <div style={{ maxWidth: "50vw" }}>
+                        <h1
+                            style={{
+                                fontSize: "clamp(48px, 6vw, 110px)",
+                                fontWeight: 800,
+                                margin: 0,
+                                lineHeight: 0.9,
+                                letterSpacing: "-0.04em",
+                                textTransform: "uppercase",
+                                color: TITLE,
+
+                                // 🔥 CRITICAL WRAPPING FIX
+                                whiteSpace: "normal",
+                                wordBreak: "break-word",
+                                overflowWrap: "break-word",
+                                hyphens: "auto",
+
+                                // 🔥 prevents flex overflow cutting text
+                                maxWidth: "100%",
+                            }}
+                        >
+                            {track.item.name}
+                        </h1>
+
+                        <h2
+                            style={{
+                                fontSize: "clamp(18px, 2.5vw, 36px)",
+                                marginTop: "30px",
+                                letterSpacing: "0.3em",
+                                textTransform: "uppercase",
+                                color: ARTIST,
+                            }}
+                        >
+                            {track.item.artists[0].name}
+                        </h2>
+
+                        {/* OFF-WHITE STYLE LINE */}
+                        <div
+                            style={{
+                                marginTop: "40px",
+                                width: "120px",
+                                height: "2px",
+                                background: TITLE,
+                                opacity: 0.4,
+                            }}
+                        />
+                    </div>
+                </div>
+
+                {/* BOTTOM LABEL */}
+                <div
+                    style={{
+                        color: META,
+                        fontSize: "12px",
+                        letterSpacing: "0.4em",
+                        textTransform: "uppercase",
+                    }}
+                >
+                    audio stream active
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
