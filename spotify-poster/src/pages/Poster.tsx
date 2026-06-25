@@ -3,9 +3,8 @@ import { spotify } from "../spotify";
 
 export default function Poster() {
   const [track, setTrack] = useState<any>(null);
-  const [bg, setBg] = useState("rgb(10,10,10)");
-  const [titleColor, setTitleColor] = useState("#fff");
-  const [artistColor, setArtistColor] = useState("#aaa");
+  const [bg, setBg] = useState("rgb(15,15,15)");
+  const [textColor, setTextColor] = useState("#fff");
 
   useEffect(() => {
     loadTrack();
@@ -26,68 +25,53 @@ export default function Poster() {
   }, []);
 
   async function loadTrack() {
-    try {
-      const playback =
-        await spotify.player.getCurrentlyPlayingTrack();
+    const playback =
+      await spotify.player.getCurrentlyPlayingTrack();
 
-      setTrack(playback);
-    } catch (err) {
-      console.error(err);
-    }
+    setTrack(playback);
   }
 
-  // 🎨 extract dominant color WITHOUT libraries (stable + Vercel-safe)
   async function extractColor(imageUrl: string) {
-    return new Promise<void>((resolve) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.src = imageUrl;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = imageUrl;
 
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-        if (!ctx) return resolve();
+      canvas.width = 40;
+      canvas.height = 40;
 
-        canvas.width = 50;
-        canvas.height = 50;
+      ctx.drawImage(img, 0, 0, 40, 40);
 
-        ctx.drawImage(img, 0, 0, 50, 50);
+      const data = ctx.getImageData(0, 0, 40, 40).data;
 
-        const data = ctx.getImageData(0, 0, 50, 50).data;
+      let r = 0, g = 0, b = 0, count = 0;
 
-        let r = 0, g = 0, b = 0;
-        let count = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i];
+        g += data[i + 1];
+        b += data[i + 2];
+        count++;
+      }
 
-        for (let i = 0; i < data.length; i += 4) {
-          r += data[i];
-          g += data[i + 1];
-          b += data[i + 2];
-          count++;
-        }
+      r = r / count;
+      g = g / count;
+      b = b / count;
 
-        r = Math.floor(r / count);
-        g = Math.floor(g / count);
-        b = Math.floor(b / count);
+      setBg(`rgb(${r}, ${g}, ${b})`);
 
-        setBg(`rgb(${r}, ${g}, ${b})`);
-
-        // luminance
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-
-        // 🎯 two contrasting text colors
-        setTitleColor(lum > 140 ? "#000" : "#fff");
-        setArtistColor(lum > 140 ? "#333" : "#bbb");
-
-        resolve();
-      };
-    });
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      setTextColor(lum > 140 ? "#000" : "#fff");
+    };
   }
 
   if (!track?.item) {
     return (
       <div className="h-screen flex items-center justify-center bg-black text-white">
-        No music playing
+        NO SIGNAL
       </div>
     );
   }
@@ -98,33 +82,29 @@ export default function Poster() {
     <div
       style={{
         height: "100vh",
-        display: "flex",
-        alignItems: "center",
-        gap: "80px",
-        padding: "80px",
-        color: titleColor,
-        fontFamily: "Space Grotesk, sans-serif",
+        width: "100vw",
         position: "relative",
         overflow: "hidden",
-        background: "#000",
+        background: "#0a0a0a",
+        fontFamily: "Impact, Space Grotesk, sans-serif",
       }}
     >
-      {/* 🌫 Apple-style blurred gradient background */}
+      {/* rough street background */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           background: `
-            radial-gradient(circle at 20% 20%, ${bg}, transparent 40%),
-            radial-gradient(circle at 80% 30%, rgba(255,255,255,0.08), transparent 50%),
-            radial-gradient(circle at 50% 80%, rgba(0,0,0,0.7), transparent 60%)
+            radial-gradient(circle at 20% 20%, ${bg}, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(255,255,255,0.08), transparent 60%),
+            #0a0a0a
           `,
-          filter: "blur(80px)",
-          transform: "scale(1.2)",
+          filter: "blur(70px)",
+          transform: "scale(1.4)",
         }}
       />
 
-      {/* load color when image changes */}
+      {/* hidden image for color extraction */}
       <img
         src={album}
         crossOrigin="anonymous"
@@ -132,44 +112,97 @@ export default function Poster() {
         onLoad={() => extractColor(album)}
       />
 
-      {/* 🧱 Brutalist layout */}
-      <img
-        src={album}
-        width={420}
+      {/* STREET LAYOUT CONTAINER */}
+      <div
         style={{
+          position: "relative",
           zIndex: 2,
-          boxShadow: "0 60px 140px rgba(0,0,0,0.6)",
-          borderRadius: "0px",
-          transform: "none",
+          height: "100%",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "80px",
         }}
-      />
-
-      <div style={{ zIndex: 2 }}>
-        <h1
+      >
+        {/* TOP LABEL (small chaos text) */}
+        <div
           style={{
-            fontSize: "72px",
-            fontWeight: 800,
-            margin: 0,
-            letterSpacing: "-0.04em",
+            fontSize: "18px",
+            letterSpacing: "0.4em",
             textTransform: "uppercase",
-            color: titleColor,
+            opacity: 0.7,
+            transform: "rotate(-2deg)",
           }}
         >
-          {track.item.name}
-        </h1>
+          now playing // live session
+        </div>
 
-        <h2
+        {/* CENTER BLOCK */}
+        <div
           style={{
-            fontSize: "28px",
-            marginTop: "20px",
-            fontFamily: "IBM Plex Mono, monospace",
-            letterSpacing: "0.25em",
-            textTransform: "uppercase",
-            color: artistColor,
+            display: "flex",
+            alignItems: "center",
+            gap: "60px",
           }}
         >
-          {track.item.artists[0].name}
-        </h2>
+          {/* ALBUM POSTER */}
+          <img
+            src={album}
+            width={380}
+            style={{
+              borderRadius: "0px",
+              boxShadow: "20px 40px 0px rgba(0,0,0,0.8)",
+              transform: "rotate(-3deg)",
+              border: `4px solid ${textColor}`,
+            }}
+          />
+
+          {/* TYPOGRAPHY STACK */}
+          <div>
+            <h1
+              style={{
+                fontSize: "110px",
+                fontWeight: 900,
+                margin: 0,
+                lineHeight: 0.85,
+                letterSpacing: "-0.06em",
+                textTransform: "uppercase",
+                color: textColor,
+                transform: "rotate(1deg)",
+              }}
+            >
+              {track.item.name}
+            </h1>
+
+            <h2
+              style={{
+                fontSize: "32px",
+                marginTop: "20px",
+                letterSpacing: "0.35em",
+                textTransform: "uppercase",
+                color: textColor,
+                opacity: 0.8,
+                transform: "rotate(-1deg)",
+              }}
+            >
+              {track.item.artists[0].name}
+            </h2>
+          </div>
+        </div>
+
+        {/* BOTTOM TAG */}
+        <div
+          style={{
+            fontSize: "14px",
+            letterSpacing: "0.5em",
+            textTransform: "uppercase",
+            opacity: 0.6,
+            transform: "rotate(2deg)",
+          }}
+        >
+          spotify frame system / 2026
+        </div>
       </div>
     </div>
   );
