@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 
 import Login from "./pages/Login";
-import Callback from "./pages/Callback";
+import Callback from "./pages/callback";
 import Poster from "./pages/Poster";
 
 export default function App() {
