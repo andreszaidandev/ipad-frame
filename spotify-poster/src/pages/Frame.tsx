@@ -33,7 +33,9 @@ export default function Frame() {
     const dy = e.clientY - s.y;
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
       const dir = dx < 0 ? 1 : -1; // swipe left → next page, right → previous
-      setPage((p) => Math.max(0, Math.min(PAGES - 1, p + dir)));
+      // Wrap around so paging is infinite: past the last page loops to the
+      // first, and before the first loops to the last.
+      setPage((p) => (p + dir + PAGES) % PAGES);
     }
   }, []);
 
@@ -64,7 +66,7 @@ export default function Frame() {
         </div>
       </div>
 
-      {/* Page indicator dots (also a non-touch fallback to switch pages). */}
+      {/* Page indicator dashes (also a non-touch fallback to switch pages). */}
       <div style={styles.dots}>
         {Array.from({ length: PAGES }, (_, i) => (
           <button
@@ -72,9 +74,9 @@ export default function Frame() {
             aria-label={`Go to page ${i + 1}`}
             onClick={() => setPage(i)}
             style={{
-              ...styles.dot,
+              ...styles.dash,
+              width: i === page ? "28px" : "16px",
               background: i === page ? INK : INK_FAINT,
-              transform: i === page ? "scale(1.25)" : "scale(1)",
             }}
           />
         ))}
@@ -121,13 +123,12 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     gap: "10px",
   },
-  dot: {
-    width: "9px",
-    height: "9px",
-    borderRadius: "50%",
+  dash: {
+    height: "3px",
+    borderRadius: "2px",
     border: "none",
     padding: 0,
     cursor: "pointer",
-    transition: "transform 160ms ease, background 160ms ease",
+    transition: "width 160ms ease, background 160ms ease",
   },
 };
