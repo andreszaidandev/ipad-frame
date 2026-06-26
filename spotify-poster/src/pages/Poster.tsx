@@ -1,24 +1,29 @@
 import { useEffect, useState } from "react";
 import type { PlaybackState, Track } from "@spotify/web-api-ts-sdk";
-import { spotify } from "../spotify";
+import { spotify, hasSpotifySession } from "../spotify";
 import { averageColor } from "../color";
+import { INK, INK_DIM, INK_FAINT, STAGE_BG, FONT, label } from "../theme";
 
 const POLL_MS = 8000;
 
 // Replace with your own Buy Me a Coffee handle.
 const COFFEE_URL = "https://buymeacoffee.com/andreszaidan";
 
-// Off-white palette (fixed, intentional).
-const TITLE = "#F5F5F0"; // bone / off-white
-const ARTIST = "rgba(245,245,240,0.65)";
-const META = "rgba(245,245,240,0.35)";
+// Off-white palette, shared app-wide via the theme module.
+const TITLE = INK; // bone / off-white
+const ARTIST = INK_DIM;
 
 export default function Poster() {
   const [playback, setPlayback] = useState<PlaybackState | null>(null);
   const [bg, setBg] = useState("rgb(15,15,15)");
+  const [authed] = useState(hasSpotifySession);
 
   // Poll the currently playing track, only swapping state when it changes.
+  // We only poll once a session exists — calling the API unauthenticated would
+  // make the SDK auto-redirect to Spotify. Without a session we instead show a
+  // login button on the NO SIGNAL screen and let the user start auth manually.
   useEffect(() => {
+    if (!authed) return;
     let active = true;
 
     async function poll() {
@@ -39,7 +44,7 @@ export default function Poster() {
       active = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [authed]);
 
   const track = playback?.item as Track | undefined;
   const cover = track?.album.images[0]?.url;
@@ -51,7 +56,14 @@ export default function Poster() {
 
   if (!track || !cover) {
     return (
-      <div style={styles.empty}>NO SIGNAL</div>
+      <div style={styles.empty}>
+        <div style={styles.emptyText}>NO SIGNAL</div>
+        {!authed && (
+          <button onClick={() => spotify.authenticate()} style={styles.loginButton}>
+            Login with Spotify
+          </button>
+        )}
+      </div>
     );
   }
 
@@ -94,37 +106,53 @@ export default function Poster() {
   );
 }
 
-const label: React.CSSProperties = {
+const cornerLabel: React.CSSProperties = {
+  ...label,
   position: "absolute",
   left: "6vw",
   zIndex: 3,
-  color: META,
-  fontSize: "12px",
-  letterSpacing: "0.4em",
-  textTransform: "uppercase",
 };
 
 const styles: Record<string, React.CSSProperties> = {
   empty: {
-    height: "100vh",
-    width: "100vw",
+    position: "absolute",
+    inset: 0,
+    width: "100%",
+    height: "100%",
     display: "flex",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
+    gap: "32px",
     background: "#000",
     color: "#fff",
-    fontFamily: "Helvetica, Arial, sans-serif",
+    fontFamily: FONT,
+  },
+  emptyText: {
     letterSpacing: "0.4em",
     textTransform: "uppercase",
   },
+  loginButton: {
+    appearance: "none",
+    cursor: "pointer",
+    padding: "14px 28px",
+    background: "transparent",
+    color: INK,
+    border: `1px solid ${INK_FAINT}`,
+    borderRadius: "999px",
+    fontFamily: FONT,
+    fontSize: "12px",
+    letterSpacing: "0.3em",
+    textTransform: "uppercase",
+  },
   stage: {
-    position: "fixed",
+    position: "absolute",
     inset: 0,
-    width: "100vw",
-    height: "100vh",
+    width: "100%",
+    height: "100%",
     overflow: "hidden",
-    background: "#0a0a0a",
-    fontFamily: "Helvetica, Arial, sans-serif",
+    background: STAGE_BG,
+    fontFamily: FONT,
   },
   glow: {
     position: "absolute",
@@ -143,8 +171,8 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     padding: "6vw",
   },
-  topLabel: { ...label, top: "6vw" },
-  bottomLabel: { ...label, bottom: "6vw" },
+  topLabel: { ...cornerLabel, top: "6vw" },
+  bottomLabel: { ...cornerLabel, bottom: "6vw" },
   coffee: {
     color: ARTIST,
     textDecoration: "underline",
