@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { INK, INK_DIM, INK_FAINT, STAGE_BG, FONT } from "../theme";
+import ColorPicker from "../components/ColorPicker";
 
 // ---------------------------------------------------------------------------
 // Infinite whiteboard: a Canvas 2D surface with vector strokes stored in world
@@ -72,6 +73,11 @@ export default function Whiteboard() {
 
   const [tool, setTool] = useState<Tool>("pen");
   const [color, setColor] = useState<string>(INK);
+  // Last color chosen from the custom picker, kept separate from the presets so
+  // the picker swatch can show it and stay highlighted while it's the active ink.
+  const [customColor, setCustomColor] = useState<string>("#c061cb");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerWrapRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number>(WIDTHS[1]);
   // Mirror history sizes + zoom into state so the toolbar can react.
   const [hist, setHist] = useState({ undo: 0, redo: 0 });
@@ -80,6 +86,16 @@ export default function Whiteboard() {
   const syncHist = useCallback(() => {
     setHist({ undo: strokesRef.current.length, redo: redoRef.current.length });
   }, []);
+
+  // Close the color picker popover on a click/tap outside of it.
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onDown = (e: PointerEvent) => {
+      if (!pickerWrapRef.current?.contains(e.target as Node)) setPickerOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [pickerOpen]);
 
   // --- Persistence (debounced) ------------------------------------------------
   const saveTimer = useRef<number | null>(null);
@@ -441,6 +457,38 @@ export default function Whiteboard() {
               }}
             />
           ))}
+
+          {/* Custom color picker — a rainbow-ringed swatch showing the current
+              custom ink; clicking it opens the in-app color picker popover. */}
+          <div ref={pickerWrapRef} style={{ position: "relative", display: "flex" }}>
+            <button
+              onClick={() => setPickerOpen((o) => !o)}
+              title="Custom color"
+              style={{
+                ...styles.swatch,
+                background:
+                  "conic-gradient(from 90deg, #e0564f, #e0a94f, #5fae7a, #5a8fd6, #c061cb, #e0564f)",
+                outline:
+                  color === customColor ? `2px solid ${INK}` : "2px solid transparent",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                overflow: "hidden",
+              }}
+            >
+              <span style={{ ...styles.pickerDot, background: customColor }} />
+            </button>
+            {pickerOpen && (
+              <ColorPicker
+                value={customColor}
+                onChange={(hex) => {
+                  setCustomColor(hex);
+                  setColor(hex);
+                  if (tool !== "pen") setTool("pen");
+                }}
+              />
+            )}
+          </div>
         </div>
 
         <div style={styles.divider} />
@@ -535,6 +583,11 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: "hidden",
     background: STAGE_BG,
     fontFamily: FONT,
+    // Stop a long pen/finger hold from selecting the board or popping the
+    // iPad/Safari text-selection + callout menu while drawing.
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    WebkitTouchCallout: "none",
   },
   canvas: {
     position: "absolute",
@@ -544,16 +597,15 @@ const styles: Record<string, React.CSSProperties> = {
   toolbar: {
     position: "absolute",
     top: "16px",
-    left: "50%",
-    transform: "translateX(-50%)",
+    left: "16px",
+    right: "16px",
     zIndex: 5,
     display: "flex",
     alignItems: "center",
     gap: "10px",
-    padding: "8px 12px",
-    maxWidth: "90vw",
+    padding: "8px 16px",
     flexWrap: "wrap",
-    justifyContent: "center",
+    justifyContent: "space-between",
     background: "rgba(20,20,20,0.85)",
     border: "1px solid rgba(245,245,240,0.15)",
     borderRadius: "10px",
@@ -586,6 +638,13 @@ const styles: Record<string, React.CSSProperties> = {
     border: "none",
     cursor: "pointer",
     padding: 0,
+  },
+  pickerDot: {
+    width: "11px",
+    height: "11px",
+    borderRadius: "50%",
+    boxShadow: "0 0 0 2px rgba(10,10,10,0.55)",
+    pointerEvents: "none",
   },
   widthBtn: {
     width: "30px",
