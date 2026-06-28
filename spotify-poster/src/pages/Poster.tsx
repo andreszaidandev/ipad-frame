@@ -160,7 +160,10 @@ export default function Poster() {
 
           <div style={styles.info}>
             {showLyrics ? (
-              <LyricsView lyrics={lyrics} state={lyricsState} activeIdx={activeIdx} />
+              <div style={styles.lyricsPanel}>
+                <LyricsView lyrics={lyrics} state={lyricsState} activeIdx={activeIdx} />
+                <div style={styles.lyricRule} />
+              </div>
             ) : (
               <>
                 <h1 style={styles.title}>{track.name}</h1>
@@ -355,6 +358,13 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     justifyContent: "center",
     gap: "clamp(8px, 1.2vw, 14px)",
+    maxHeight: "calc(100% - 42px)",
+    overflow: "hidden",
+  },
+  lyricsPanel: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
     maxHeight: "100%",
     overflow: "hidden",
   },
@@ -389,6 +399,14 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: "uppercase",
     maxHeight: "100%",
     overflow: "hidden",
+  },
+  lyricRule: {
+    flexShrink: 0,
+    marginTop: "32px",
+    width: "120px",
+    height: "2px",
+    background: TITLE,
+    opacity: 0.4,
   },
   info: {
     flex: 1,
