@@ -339,7 +339,8 @@ const styles: Record<string, React.CSSProperties> = {
     // Sit just to the right of the artwork's hard drop shadow (offset 40px
     // right / 60px down), anchored to the bottom-right corner, upright.
     left: "calc(100% + 48px)",
-    bottom: "-28px",
+    // Align the pill's base with the bottom of the drop shadow (60px below).
+    bottom: "-60px",
     whiteSpace: "nowrap",
     zIndex: 2,
     appearance: "none",
