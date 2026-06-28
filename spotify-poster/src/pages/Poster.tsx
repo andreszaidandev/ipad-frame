@@ -156,17 +156,14 @@ export default function Poster() {
         <div style={styles.main}>
           <div style={styles.coverWrap}>
             <img src={cover} alt="" style={styles.cover} />
-            <button
-              onClick={() => setShowLyrics((s) => !s)}
-              style={styles.lyricsPill}
-            >
-              {showLyrics ? "Credits" : "Lyrics"}
-            </button>
           </div>
 
           <div style={styles.info}>
             {showLyrics ? (
-              <LyricsView lyrics={lyrics} state={lyricsState} activeIdx={activeIdx} />
+              <div style={styles.lyricsPanel}>
+                <LyricsView lyrics={lyrics} state={lyricsState} activeIdx={activeIdx} />
+                <div style={styles.lyricRule} />
+              </div>
             ) : (
               <>
                 <h1 style={styles.title}>{track.name}</h1>
@@ -177,7 +174,15 @@ export default function Poster() {
           </div>
         </div>
 
-        <div style={styles.bottomLabel}>audio stream active</div>
+        <div style={styles.bottomLabel}>
+          audio stream active /{" "}
+          <button
+            onClick={() => setShowLyrics((s) => !s)}
+            style={styles.bottomToggle}
+          >
+            {showLyrics ? "credits" : "lyrics"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -207,7 +212,7 @@ function LyricsView({
       <div style={styles.lyricsBox}>
         {lyrics.plain
           .split("\n")
-          .slice(0, 10)
+          .slice(0, 8)
           .map((l, i) => (
             <div key={i} style={{ ...styles.lyricLine, ...styles.lyricInactive }}>
               {l || " "}
@@ -219,7 +224,7 @@ function LyricsView({
 
   const lines = lyrics.synced!;
   const start = Math.max(0, activeIdx - 1);
-  const windowed = lines.slice(start, start + 6);
+  const windowed = lines.slice(start, start + 5);
   return (
     <div style={styles.lyricsBox}>
       {windowed.map((ln, i) => {
@@ -313,6 +318,20 @@ const styles: Record<string, React.CSSProperties> = {
     textDecoration: "underline",
     textUnderlineOffset: "3px",
   },
+  bottomToggle: {
+    appearance: "none",
+    cursor: "pointer",
+    margin: 0,
+    padding: 0,
+    border: 0,
+    background: "transparent",
+    color: ARTIST,
+    font: "inherit",
+    letterSpacing: "inherit",
+    textTransform: "inherit",
+    textDecoration: "underline",
+    textUnderlineOffset: "3px",
+  },
   main: {
     display: "flex",
     alignItems: "center",
@@ -334,32 +353,20 @@ const styles: Record<string, React.CSSProperties> = {
     border: "1px solid rgba(245,245,240,0.2)",
     transform: "rotate(-1deg)",
   },
-  lyricsPill: {
-    position: "absolute",
-    // Sit just to the right of the artwork's hard drop shadow (offset 40px
-    // right / 60px down), anchored to the bottom-right corner, upright.
-    left: "calc(100% + 48px)",
-    // Align the pill's base with the bottom of the drop shadow (60px below).
-    bottom: "-60px",
-    whiteSpace: "nowrap",
-    zIndex: 2,
-    appearance: "none",
-    cursor: "pointer",
-    padding: "6px 12px",
-    background: "rgba(10,10,10,0.6)",
-    color: INK,
-    border: "1px solid rgba(245,245,240,0.3)",
-    borderRadius: "4px",
-    fontFamily: FONT,
-    fontSize: "11px",
-    letterSpacing: "0.3em",
-    textTransform: "uppercase",
-    backdropFilter: "blur(6px)",
-  },
   lyricsBox: {
     display: "flex",
     flexDirection: "column",
-    gap: "14px",
+    justifyContent: "center",
+    gap: "clamp(8px, 1.2vw, 14px)",
+    maxHeight: "calc(100% - 42px)",
+    overflow: "hidden",
+  },
+  lyricsPanel: {
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    maxHeight: "100%",
+    overflow: "hidden",
   },
   lyricLine: {
     margin: 0,
@@ -369,29 +376,43 @@ const styles: Record<string, React.CSSProperties> = {
   // Active line mirrors the poster title.
   lyricActive: {
     color: TITLE,
-    fontSize: "clamp(36px, 5vw, 92px)",
+    fontSize: "clamp(30px, 4.4vw, 72px)",
     fontWeight: 800,
-    lineHeight: 0.9,
-    letterSpacing: "-0.04em",
+    lineHeight: 0.95,
+    letterSpacing: 0,
     textTransform: "uppercase",
   },
   // Other lines mirror the artist line.
   lyricInactive: {
     color: ARTIST,
-    fontSize: "clamp(18px, 2.5vw, 36px)",
+    fontSize: "clamp(15px, 2vw, 30px)",
+    lineHeight: 1.15,
     letterSpacing: "0.3em",
     textTransform: "uppercase",
   },
   // The not-ready / unavailable note also mirrors the artist line.
   lyricNote: {
     color: ARTIST,
-    fontSize: "clamp(18px, 2.5vw, 36px)",
+    fontSize: "clamp(15px, 2vw, 30px)",
+    lineHeight: 1.15,
     letterSpacing: "0.3em",
     textTransform: "uppercase",
+    maxHeight: "100%",
+    overflow: "hidden",
+  },
+  lyricRule: {
+    flexShrink: 0,
+    marginTop: "32px",
+    width: "120px",
+    height: "2px",
+    background: TITLE,
+    opacity: 0.4,
   },
   info: {
     flex: 1,
     minWidth: 0, // lets the title wrap instead of overflowing the flex row
+    maxHeight: "min(62vh, calc(100vh - 20vw))",
+    overflow: "hidden",
     position: "relative",
     zIndex: 1, // keep text above the album's transformed shadow
   },
@@ -400,7 +421,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800,
     margin: 0,
     lineHeight: 0.9,
-    letterSpacing: "-0.04em",
+    letterSpacing: 0,
     textTransform: "uppercase",
     color: TITLE,
     // Wrap at spaces (whole words per line); only hard-break a word that is
