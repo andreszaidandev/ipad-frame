@@ -8,7 +8,7 @@ export default function Callback() {
   useEffect(() => {
     spotify
       .authenticate()
-      .then(() => navigate("/poster"))
+      .then(() => navigate("/"))
       .catch((err) => {
         console.error("Auth failed", err);
         navigate("/");
