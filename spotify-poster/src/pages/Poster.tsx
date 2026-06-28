@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PlaybackState, Track } from "@spotify/web-api-ts-sdk";
 import { spotify, hasSpotifySession } from "../spotify";
 import { averageColor } from "../color";
+import { fetchLyrics, activeLineIndex, type Lyrics } from "../lyrics";
 import { INK, INK_DIM, INK_FAINT, STAGE_BG, FONT, label } from "../theme";
 
 const POLL_MS = 8000;
@@ -18,6 +19,18 @@ export default function Poster() {
   const [bg, setBg] = useState("rgb(15,15,15)");
   const [authed] = useState(hasSpotifySession);
 
+  // Lyrics view: a toggle, the fetched lyrics, their load state, and the index
+  // of the line currently playing.
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [lyrics, setLyrics] = useState<Lyrics | null>(null);
+  const [lyricsState, setLyricsState] = useState<"loading" | "ready" | "none">(
+    "none"
+  );
+  const [activeIdx, setActiveIdx] = useState(-1);
+  // Authoritative playback position, refreshed each poll and advanced locally
+  // between polls so the synced lyrics track the song smoothly.
+  const progressRef = useRef({ baseMs: 0, at: 0, playing: false });
+
   // Poll the currently playing track, only swapping state when it changes.
   // We only poll once a session exists — calling the API unauthenticated would
   // make the SDK auto-redirect to Spotify. Without a session we instead show a
@@ -30,6 +43,13 @@ export default function Poster() {
       try {
         const next = await spotify.player.getCurrentlyPlayingTrack();
         if (!active) return;
+        if (next?.item) {
+          progressRef.current = {
+            baseMs: next.progress_ms ?? 0,
+            at: Date.now(),
+            playing: next.is_playing ?? false,
+          };
+        }
         setPlayback((prev) => (prev?.item?.id === next?.item?.id ? prev : next));
       } catch (err) {
         // Token refresh/auth failures here trigger the SDK's own re-auth
@@ -53,6 +73,49 @@ export default function Poster() {
   useEffect(() => {
     if (cover) averageColor(cover).then(setBg).catch(() => {});
   }, [cover]);
+
+  // Fetch lyrics whenever the track changes.
+  const trackId = track?.id;
+  useEffect(() => {
+    if (!track) return;
+    const ctrl = new AbortController();
+    setLyrics(null);
+    setActiveIdx(-1);
+    setLyricsState("loading");
+    fetchLyrics(
+      {
+        name: track.name,
+        artist: track.artists[0].name,
+        album: track.album.name,
+        durationMs: track.duration_ms,
+      },
+      ctrl.signal
+    )
+      .then((r) => {
+        setLyrics(r);
+        setLyricsState(r.synced?.length || r.plain ? "ready" : "none");
+      })
+      .catch((e) => {
+        if ((e as Error).name !== "AbortError") setLyricsState("none");
+      });
+    return () => ctrl.abort();
+  }, [trackId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // While the lyrics view is open, advance the active line from the live
+  // playback position (re-rendering only when the line actually changes).
+  useEffect(() => {
+    if (!showLyrics || !lyrics?.synced?.length) return;
+    const lines = lyrics.synced;
+    const tick = () => {
+      const p = progressRef.current;
+      const ms = p.baseMs + (p.playing ? Date.now() - p.at : 0);
+      const next = activeLineIndex(lines, ms);
+      setActiveIdx((cur) => (cur === next ? cur : next));
+    };
+    tick();
+    const id = window.setInterval(tick, 250);
+    return () => window.clearInterval(id);
+  }, [showLyrics, lyrics]);
 
   if (!track || !cover) {
     return (
@@ -91,17 +154,89 @@ export default function Poster() {
         </div>
 
         <div style={styles.main}>
-          <img src={cover} alt="" style={styles.cover} />
+          <div style={styles.coverWrap}>
+            <img src={cover} alt="" style={styles.cover} />
+            <button
+              onClick={() => setShowLyrics((s) => !s)}
+              style={styles.lyricsPill}
+            >
+              {showLyrics ? "Credits" : "Lyrics"}
+            </button>
+          </div>
 
           <div style={styles.info}>
-            <h1 style={styles.title}>{track.name}</h1>
-            <h2 style={styles.artist}>{track.artists[0].name}</h2>
-            <div style={styles.rule} />
+            {showLyrics ? (
+              <LyricsView lyrics={lyrics} state={lyricsState} activeIdx={activeIdx} />
+            ) : (
+              <>
+                <h1 style={styles.title}>{track.name}</h1>
+                <h2 style={styles.artist}>{track.artists[0].name}</h2>
+                <div style={styles.rule} />
+              </>
+            )}
           </div>
         </div>
 
         <div style={styles.bottomLabel}>audio stream active</div>
       </div>
+    </div>
+  );
+}
+
+// Lyrics column: a moving window of synced lines (active line highlighted),
+// or the plain text / a status note when synced lines aren't available.
+function LyricsView({
+  lyrics,
+  state,
+  activeIdx,
+}: {
+  lyrics: Lyrics | null;
+  state: "loading" | "ready" | "none";
+  activeIdx: number;
+}) {
+  if (state === "loading") {
+    return <div style={styles.lyricNote}>Loading lyrics…</div>;
+  }
+  if (!lyrics || (!lyrics.synced?.length && !lyrics.plain)) {
+    return <div style={styles.lyricNote}>Lyrics unavailable</div>;
+  }
+
+  // Unsynced fallback — show the plain text (it can't follow the song).
+  if (!lyrics.synced?.length && lyrics.plain) {
+    return (
+      <div style={styles.lyricsBox}>
+        {lyrics.plain
+          .split("\n")
+          .slice(0, 10)
+          .map((l, i) => (
+            <div key={i} style={{ ...styles.lyricLine, ...styles.lyricInactive }}>
+              {l || " "}
+            </div>
+          ))}
+      </div>
+    );
+  }
+
+  const lines = lyrics.synced!;
+  const start = Math.max(0, activeIdx - 1);
+  const windowed = lines.slice(start, start + 6);
+  return (
+    <div style={styles.lyricsBox}>
+      {windowed.map((ln, i) => {
+        const real = start + i;
+        const isActive = real === activeIdx;
+        return (
+          <div
+            key={real}
+            style={{
+              ...styles.lyricLine,
+              ...(isActive ? styles.lyricActive : styles.lyricInactive),
+            }}
+          >
+            {ln.text || "♪"}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -185,15 +320,66 @@ const styles: Record<string, React.CSSProperties> = {
     // Nudge the composition up so it reads as centered above the bottom label.
     marginBottom: "5vh",
   },
+  coverWrap: {
+    position: "relative",
+    flexShrink: 0,
+    // Tilt the whole artwork (image + lyrics pill) together.
+    transform: "rotate(-1deg)",
+  },
   cover: {
+    display: "block",
     width: "40vw",
     maxWidth: "520px",
     aspectRatio: "1 / 1",
     objectFit: "cover",
-    flexShrink: 0,
     boxShadow: "40px 60px 0px rgba(0,0,0,0.7)",
     border: "1px solid rgba(245,245,240,0.2)",
-    transform: "rotate(-1deg)",
+  },
+  lyricsPill: {
+    position: "absolute",
+    right: "12px",
+    bottom: "12px",
+    zIndex: 2,
+    appearance: "none",
+    cursor: "pointer",
+    padding: "6px 12px",
+    background: "rgba(10,10,10,0.6)",
+    color: INK,
+    border: "1px solid rgba(245,245,240,0.3)",
+    borderRadius: "4px",
+    fontFamily: FONT,
+    fontSize: "11px",
+    letterSpacing: "0.3em",
+    textTransform: "uppercase",
+    backdropFilter: "blur(6px)",
+  },
+  lyricsBox: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    maxWidth: "640px",
+  },
+  lyricLine: {
+    margin: 0,
+    lineHeight: 1.15,
+    letterSpacing: "-0.01em",
+    overflowWrap: "break-word",
+    transition: "color 200ms ease, font-size 200ms ease",
+  },
+  lyricActive: {
+    color: INK,
+    fontWeight: 700,
+    fontSize: "clamp(24px, 3.2vw, 46px)",
+  },
+  lyricInactive: {
+    color: INK_FAINT,
+    fontWeight: 500,
+    fontSize: "clamp(16px, 2vw, 28px)",
+  },
+  lyricNote: {
+    color: INK_DIM,
+    fontSize: "clamp(16px, 2vw, 24px)",
+    letterSpacing: "0.05em",
   },
   info: {
     flex: 1,
