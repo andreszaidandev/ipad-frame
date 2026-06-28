@@ -583,6 +583,11 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: "hidden",
     background: STAGE_BG,
     fontFamily: FONT,
+    // Stop a long pen/finger hold from selecting the board or popping the
+    // iPad/Safari text-selection + callout menu while drawing.
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    WebkitTouchCallout: "none",
   },
   canvas: {
     position: "absolute",
