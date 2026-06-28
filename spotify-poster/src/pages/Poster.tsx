@@ -323,8 +323,6 @@ const styles: Record<string, React.CSSProperties> = {
   coverWrap: {
     position: "relative",
     flexShrink: 0,
-    // Tilt the whole artwork (image + lyrics pill) together.
-    transform: "rotate(-1deg)",
   },
   cover: {
     display: "block",
@@ -334,11 +332,15 @@ const styles: Record<string, React.CSSProperties> = {
     objectFit: "cover",
     boxShadow: "40px 60px 0px rgba(0,0,0,0.7)",
     border: "1px solid rgba(245,245,240,0.2)",
+    transform: "rotate(-1deg)",
   },
   lyricsPill: {
     position: "absolute",
-    right: "12px",
-    bottom: "12px",
+    // Sit just to the right of the artwork's hard drop shadow (offset 40px
+    // right / 60px down), anchored to the bottom-right corner, upright.
+    left: "calc(100% + 48px)",
+    bottom: "-28px",
+    whiteSpace: "nowrap",
     zIndex: 2,
     appearance: "none",
     cursor: "pointer",
@@ -356,30 +358,35 @@ const styles: Record<string, React.CSSProperties> = {
   lyricsBox: {
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
-    maxWidth: "640px",
+    gap: "14px",
   },
   lyricLine: {
     margin: 0,
-    lineHeight: 1.15,
-    letterSpacing: "-0.01em",
     overflowWrap: "break-word",
     transition: "color 200ms ease, font-size 200ms ease",
   },
+  // Active line mirrors the poster title.
   lyricActive: {
-    color: INK,
-    fontWeight: 700,
-    fontSize: "clamp(24px, 3.2vw, 46px)",
+    color: TITLE,
+    fontSize: "clamp(36px, 5vw, 92px)",
+    fontWeight: 800,
+    lineHeight: 0.9,
+    letterSpacing: "-0.04em",
+    textTransform: "uppercase",
   },
+  // Other lines mirror the artist line.
   lyricInactive: {
-    color: INK_FAINT,
-    fontWeight: 500,
-    fontSize: "clamp(16px, 2vw, 28px)",
+    color: ARTIST,
+    fontSize: "clamp(18px, 2.5vw, 36px)",
+    letterSpacing: "0.3em",
+    textTransform: "uppercase",
   },
+  // The not-ready / unavailable note also mirrors the artist line.
   lyricNote: {
-    color: INK_DIM,
-    fontSize: "clamp(16px, 2vw, 24px)",
-    letterSpacing: "0.05em",
+    color: ARTIST,
+    fontSize: "clamp(18px, 2.5vw, 36px)",
+    letterSpacing: "0.3em",
+    textTransform: "uppercase",
   },
   info: {
     flex: 1,
