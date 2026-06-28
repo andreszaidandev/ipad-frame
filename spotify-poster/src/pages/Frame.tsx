@@ -7,9 +7,9 @@ import { INK, INK_FAINT } from "../theme";
 // Paged frame: holds the full-screen pages and slides between them on a
 // horizontal swipe. Page switching is triggered by a horizontal swipe.
 //
-// On the poster (a static page) a swipe anywhere flips pages. On the whiteboard
-// a one-finger drag is reserved for drawing, so page switches there only fire
-// from the thin left/right EDGE_ZONE strips — keeping draw and swipe separate.
+// Both pages switch only from the thin left/right EDGE_ZONE strips. On the
+// whiteboard a one-finger drag is reserved for drawing; the poster mirrors the
+// same edge-only gesture so the two surfaces behave identically.
 //
 // Paging is INFINITE and always animates in the swipe direction. Rather than a
 // fixed side-by-side track (which can't loop the last→first jump without
@@ -103,15 +103,16 @@ export default function Frame() {
           transform: `translateX(${-view.index * 100}vw)`,
         }}
       >
-        {/* Page 0 — poster. Swipe anywhere flips pages. */}
+        {/* Page 0 — poster. Only the edge strips own the swipe gesture. */}
         <div
           style={{
             ...styles.panel,
             transform: `translateX(${view.positions[0] * 100}vw)`,
           }}
-          {...swipeHandlers}
         >
           <Poster />
+          <div style={{ ...styles.edge, left: 0 }} {...swipeHandlers} />
+          <div style={{ ...styles.edge, right: 0 }} {...swipeHandlers} />
         </div>
 
         {/* Page 1 — whiteboard. Only the edge strips own the swipe gesture. */}
